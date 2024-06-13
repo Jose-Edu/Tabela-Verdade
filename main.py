@@ -4,6 +4,13 @@ and: .
 or: +
 xor: -
 =: <->
+
+ordem:
+1º: ()
+2º: {}
+3º: .
+4º: +
+5º: -
 """
 
 
@@ -70,6 +77,41 @@ def set_table(exp) -> dict:
     return cols
 
 
+def op(col_1, col_2, op) -> list:
+
+    """Função que retorna uma coluna resuldada de uma operação de duas colunas dadas em parâmetros."""
+
+    rtn_col = list()
+
+    if op == '.':
+        for c1, c2 in zip(col_1, col_2):
+            rtn_col.append('1') if (c1 == '1') and (c2 == '1') else rtn_col.append('0')
+
+    if op == '+':
+        for c1, c2 in zip(col_1, col_2):
+            rtn_col.append('1') if (c1 == '1') or (c2 == '1') else rtn_col.append('0')
+
+    if op == '-':
+        for c1, c2 in zip(col_1, col_2):
+            rtn_col.append('1') if (c1 == '1') ^ (c2 == '1') else rtn_col.append('0')
+
+    return rtn_col
+
+
+def neg(col) -> list:
+    
+    """
+    Função que retorna a versão negada de uma coluna.
+    """
+
+    rtn_col = list()
+
+    for line in col:
+        rtn_col.append('1') if line == '0' else rtn_col.append('0')
+
+    return rtn_col
+
+
 def main() -> None:
 
     """
@@ -85,7 +127,6 @@ def main() -> None:
 
     # Define a tabela
     table = set_table(exp)
-    
 
 
 # Execução da base do programa
