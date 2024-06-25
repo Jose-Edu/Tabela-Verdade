@@ -16,7 +16,7 @@ ORDEM:
 6º: =
 """
 
-az = 'abcdefghijklmnopqrstuvwxyz'
+az = 'abcdefghijklmnopqrstuvwxyz' # Variável que armazena o alfabeto
 
 
 def count_vars(exp) -> int:
@@ -93,7 +93,9 @@ def op(op, table) -> list:
 
     col_1 = table[op[1:op.find(']')]]
     act = op[op.find(']')+1]
-    col_2 = table[op[op.find(']')+3:-1]]
+    col_2 = op[op.find(']')+3:-1].replace(']', '')
+    col_2 = col_2.replace('[', '')
+    col_2 = table[col_2]
 
     rtn_col = list()
 
@@ -132,12 +134,12 @@ def neg(col) -> list:
 
 def is_col(table, col) -> bool:
     """
-    Retorna se uma coluna está registrada.
-    table = tabela total
+    Retorna se uma coluna está registrada.\n
+    table = tabela total\n
     col = nome da coluna a ser checada.
     """
 
-    return True if col in table.keys() else False
+    return True if col[1:-1] in table.keys() else False
 
 
 def is_op(op) -> bool:
@@ -148,24 +150,26 @@ def is_op(op) -> bool:
     return True if op.count('[') == 2 else False
 
 
-def work_set(_open, _close, exp, cut_start, cut_end) -> None:
+def work_set(exp, cut_start, cut_end, _open, _close) -> tuple:
 
     '''
     Função que realiza a determinação da 'Área de trabalho' de uma expressão, limitando uma parte dele em () ou {}.
     Ex: ([a]+[b]).[c] -> [a]+[b]
     '''
 
-    start = exp[cut_start:cut_end].find(_open)+1
-
-    while exp[cut_start:cut_end].count(_open) != 0:
+    if exp.count(_open) > 0:
+        start = exp[cut_start:cut_end].find(_open)+1
         p_open = 1
+
         for index, c in enumerate(exp[start:]):
             if c == _open: p_open += 1
             elif c == _close: p_open -= 1
             if p_open == 0:
-                cut_start = exp[cut_start:cut_end].find(_open)+1
-                cut_end = index
+                cut_start += start
+                cut_end = start+index+1
                 break
+
+    return cut_start, cut_end
 
 
 def has_op(op, exp) -> bool:
@@ -185,10 +189,10 @@ def has_op(op, exp) -> bool:
     return True if ex.count(op) > 0 else False 
 
 
-def set_op(exp_ac, cut_start, cut_end, op) -> None:
+def set_op(exp_ac, cut_start, cut_end, op) -> tuple:
 
     """
-    Define a área de trabalho para ser apenas uma operação expecífica.
+    Retorna o cut_start e cut_end de uma 'área de trabalho' para ser apenas uma operação expecífica.
     Exemplo: op = ., exp_ac = [a]+[b].[c] -> [b].[c]
     """
 
@@ -199,8 +203,7 @@ def set_op(exp_ac, cut_start, cut_end, op) -> None:
             op_point = cut_start+index
             cut_start = exp_ac.rfind('[', 0, op_point)
             cut_end = exp_ac.find(']', op_point)+1
-            break
-    
+            return cut_start, cut_end
 
 
 def main() -> None:
@@ -218,23 +221,22 @@ def main() -> None:
     exp = exp.replace(' ', '')
     exp = exp.lower()
 
+    # Cópia da expressão que é alterada ao longo do processo de solução da expressão.
+    exp_ac = exp
+
     # Define a tabela
     table = set_table(exp)
 
     # Cria a variável com a expressão com as colunas definidas
     # Ex: a.b+c -> [a].[b]+[c]
     for letter in az:
-        if letter in exp: 
-            exp = exp.replace(letter, f'[{letter}]')
+        if letter in exp_ac: 
+            exp_ac = exp_ac.replace(letter, f'[{letter}]')
         else:
             break
-    
-    # Cópia da expressão que é alterada ao longo do processo de solução da expressão.
-    exp_ac = exp
 
     # While que segue a regra de prioridades da tabela verdade para criar as colunas na ordem correta, assim, solucionando a operação.
     while not is_col(table, exp): # Enquanto a expressão não for uma coluna cadastrada na tabela, repete o laço.
-
         # Criação de variáveis que limitam a "Área de trabalho" da expressão (negações e parenteses).
         cut_start = 0
         cut_end = len(exp_ac)
@@ -243,49 +245,53 @@ def main() -> None:
         # While que só encerra ao encontrar a primeira operação dentro da expressão, seguindo a ordem de prioridade.
         # Exemplo: [a]+[b].[c] -> op = [b].[c]
         while True:
+
             # Checa se o trecho atual da expressão já é uma operação e, se for, sai do laço. 
-            if is_op(exp_ac[cut_start:cut_end]):
+            if is_col(table, exp_ac[cut_start:cut_end]):
                 break
 
             # Limita a "Área de trabalho" da expressão para dentro dos parênteses, se houver"
             if has_op('(', exp_ac[cut_start:cut_end]):
-                work_set('(', ')', exp_ac, cut_start, cut_end, exp_ac)
-                if is_col(table, exp_ac[cut_start+1:cut_end-1]): # Se o conteúdo dos parênteses for apenas uma coluna, remove os mesmos.
+                cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '(', ')')
+                if is_col(table, exp_ac[cut_start+2:cut_end-2]): # Se o conteúdo dos parênteses for apenas uma coluna, remove os mesmos.
                     exp_ac = exp_ac[:cut_start-1]+exp_ac[cut_start:cut_end]+exp_ac[cut_end+1:]
             
             # Limita a "Área de trabalho" da expressão para dentro das negações, se houver. Cria a coluna negada se possível."
             elif has_op('{', exp_ac[cut_start:cut_end]):
-                work_set('{', '}', exp_ac, cut_start, cut_end, exp_ac)
+                cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '{', '}')
 
                 # Se a "Área de trabalho" for uma coluna já cadastrada na tabela, cria a versão negada da coluna e sai do laço.
-                if is_col(table, exp_ac[cut_start:cut_end]):
+                if is_col(table, exp_ac[cut_start+1:cut_end-1]):
                     table['{'+exp_ac[cut_start:cut_end]+'}'] = neg(exp_ac[cut_start:cut_end])
                     is_neg = True
                     break
             
             # Se houver um AND na "Área de trabalho" da expressão, configura a operação para ser resolvida e sai do laço"
-            elif has_op('.', exp_ac[cut_start:cut_end]):
-                set_op(exp_ac, cut_start, cut_end, '.')
+            elif has_op('.', exp_ac[cut_start:cut_end]):  
+                cut_start, cut_end = set_op(exp_ac, cut_start, cut_end, '.')
                 break
 
             # Se houver um OR na "Área de trabalho" da expressão, configura a operação para ser resolvida e sai do laço"
             elif has_op('+', exp_ac[cut_start:cut_end]):
-                set_op(exp_ac, cut_start, cut_end, '+')
+                cut_start, cut_end = set_op(exp_ac, cut_start, cut_end, '+')
                 break
 
             # Se houver um XOR na "Área de trabalho" da expressão, configura a operação para ser resolvida e sai do laço"
             elif has_op('-', exp_ac[cut_start:cut_end]):
-                set_op(exp_ac, cut_start, cut_end, '-')
+                cut_start, cut_end = set_op(exp_ac, cut_start, cut_end, '-')
                 break
 
             # Se houver um EQUAL na "Área de trabalho" da expressão, configura a operação para ser resolvida e sai do laço"
             elif has_op('=', exp_ac[cut_start:cut_end]):
-                set_op(exp_ac, cut_start, cut_end, '=')
+                cut_start, cut_end = set_op(exp_ac, cut_start, cut_end, '=')
                 break
 
         # Após definir a operação a ser feita, cria a coluna na tabela para a operação e atualiza o exp_ac.
         # Atualizar exp_ac: [a]-[b]+[c] -> [a]-[b+c] -> [a-b+c]. (Veja um exemplo mais desenvolvido em "logictest.txt")
         
+        # Se a "Coluna resposta" já existir encerra o laço indo para a resposta.
+        if is_col(table, exp_ac): break
+
         # Atualização em caso de negação
         if is_neg:
             cut_start -= 1
@@ -298,11 +304,15 @@ def main() -> None:
         
         # Atualização em caso de operação comum
         else:
-            table[exp_ac[cut_start:cut_end]] = op(exp_ac[cut_start:cut_end], table)
-            exp_ac = exp_ac[:cut_start]+exp_ac[cut_start:exp_ac[cut_start:cut_end].find(']')]+exp_ac[exp_ac[cut_start:cut_end].find(']')+1]+exp_ac[exp_ac[cut_start:cut_end].find(']')+3:]
+            col_name = exp_ac[cut_start:cut_end]
+            col_name = col_name.replace('[','')
+            col_name = col_name.replace(']','')
+            table[col_name] = op(exp_ac[cut_start:cut_end], table)
+            exp_ac = exp_ac[:cut_start]+f'[{col_name}]'+exp_ac[cut_end:]
 
     # Quando o programa achar a resposta, imprime a coluna respota na tela
     print(table[exp])
+
 
 # Execução da base do programa
 if __name__ == '__main__':
