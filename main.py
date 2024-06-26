@@ -91,7 +91,7 @@ def op(op, table) -> list:
     table = Tabela de colunas;
     """
 
-    col_1 = table[op[1:op.find(']')]]
+    col_1 = table[op[op.find('[')+1:op.find(']')]]
     act = op[op.find(']')+1]
     col_2 = op[op.find(']')+3:-1].replace(']', '')
     col_2 = col_2.replace('[', '')
@@ -118,14 +118,15 @@ def op(op, table) -> list:
     return rtn_col
 
 
-def neg(col) -> list:
+def neg(col_name, table) -> list:
     
     """
     Função que retorna a versão negada de uma coluna.
     """
 
+    col = table[col_name[1:-1]]
     rtn_col = list()
-
+    
     for line in col:
         rtn_col.append('1') if line == '0' else rtn_col.append('0')
 
@@ -139,7 +140,10 @@ def is_col(table, col) -> bool:
     col = nome da coluna a ser checada.
     """
 
-    return True if col[1:-1] in table.keys() else False
+    col_filtro = col.replace('[', '')
+    col_filtro = col_filtro.replace(']', '')
+
+    return True if col_filtro in table.keys() else False
 
 
 def is_op(op) -> bool:
@@ -166,7 +170,7 @@ def work_set(exp, cut_start, cut_end, _open, _close) -> tuple:
             elif c == _close: p_open -= 1
             if p_open == 0:
                 cut_start += start
-                cut_end = start+index+1
+                cut_end = start+index
                 break
 
     return cut_start, cut_end
@@ -245,6 +249,7 @@ def main() -> None:
         # While que só encerra ao encontrar a primeira operação dentro da expressão, seguindo a ordem de prioridade.
         # Exemplo: [a]+[b].[c] -> op = [b].[c]
         while True:
+            print(exp_ac, exp_ac[cut_start:cut_end])
 
             # Checa se o trecho atual da expressão já é uma operação e, se for, sai do laço. 
             if is_col(table, exp_ac[cut_start:cut_end]):
@@ -253,16 +258,18 @@ def main() -> None:
             # Limita a "Área de trabalho" da expressão para dentro dos parênteses, se houver"
             if has_op('(', exp_ac[cut_start:cut_end]):
                 cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '(', ')')
-                if is_col(table, exp_ac[cut_start+2:cut_end-2]): # Se o conteúdo dos parênteses for apenas uma coluna, remove os mesmos.
+                if is_col(table, exp_ac[cut_start:cut_end]): # Se o conteúdo dos parênteses for apenas uma coluna, remove os mesmos.
                     exp_ac = exp_ac[:cut_start-1]+exp_ac[cut_start:cut_end]+exp_ac[cut_end+1:]
+                    cut_start = 0
+                    cut_end = len(exp_ac)
             
             # Limita a "Área de trabalho" da expressão para dentro das negações, se houver. Cria a coluna negada se possível."
             elif has_op('{', exp_ac[cut_start:cut_end]):
                 cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '{', '}')
 
                 # Se a "Área de trabalho" for uma coluna já cadastrada na tabela, cria a versão negada da coluna e sai do laço.
-                if is_col(table, exp_ac[cut_start+1:cut_end-1]):
-                    table['{'+exp_ac[cut_start:cut_end]+'}'] = neg(exp_ac[cut_start:cut_end])
+                if is_col(table, exp_ac[cut_start:cut_end]):
+                    table['{'+exp_ac[cut_start+1:cut_end-1]+'}'] = neg(exp_ac[cut_start:cut_end], table)
                     is_neg = True
                     break
             
@@ -311,6 +318,8 @@ def main() -> None:
             exp_ac = exp_ac[:cut_start]+f'[{col_name}]'+exp_ac[cut_end:]
 
     # Quando o programa achar a resposta, imprime a coluna respota na tela
+    print(table.keys())
+    print(exp_ac)
     print(table[exp])
 
 
