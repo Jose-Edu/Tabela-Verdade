@@ -8,7 +8,6 @@
 > create [a]+[b]
 >> cols: [a], [b], [c], [a+c], [a+b]
 >> memory-op: [a+c].[b].{[a+b]+[c]}
-
 > create [a+b]+[c]
 >> cols: [a], [b], [c], [a+c], [a+b], [a+b+c]
 >> memory-op: [a+c].[b].{[a+b+c]}

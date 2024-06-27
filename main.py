@@ -231,6 +231,10 @@ def main() -> None:
     # Define a tabela
     table = set_table(exp)
 
+    # Remove os parênteses apenas da variável original da expressão para facilitar a checagem de quando a coluna resposta for criada.
+    exp = exp.replace('(', '')
+    exp = exp.replace(')', '')
+
     # Cria a variável com a expressão com as colunas definidas
     # Ex: a.b+c -> [a].[b]+[c]
     for letter in az:
@@ -265,13 +269,14 @@ def main() -> None:
             
             # Limita a "Área de trabalho" da expressão para dentro das negações, se houver. Cria a coluna negada se possível."
             elif has_op('{', exp_ac[cut_start:cut_end]):
-                cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '{', '}')
-
+                
                 # Se a "Área de trabalho" for uma coluna já cadastrada na tabela, cria a versão negada da coluna e sai do laço.
                 if is_col(table, exp_ac[cut_start:cut_end]):
                     table['{'+exp_ac[cut_start+1:cut_end-1]+'}'] = neg(exp_ac[cut_start:cut_end], table)
                     is_neg = True
                     break
+
+                cut_start, cut_end = work_set(exp_ac, cut_start, cut_end, '{', '}')
             
             # Se houver um AND na "Área de trabalho" da expressão, configura a operação para ser resolvida e sai do laço"
             elif has_op('.', exp_ac[cut_start:cut_end]):  
@@ -318,8 +323,6 @@ def main() -> None:
             exp_ac = exp_ac[:cut_start]+f'[{col_name}]'+exp_ac[cut_end:]
 
     # Quando o programa achar a resposta, imprime a coluna respota na tela
-    print(table.keys())
-    print(exp_ac)
     print(table[exp])
 
 
