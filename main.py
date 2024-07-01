@@ -173,7 +173,7 @@ def work_set(exp, cut_start, cut_end, _open, _close) -> tuple:
                 cut_end = start+index
                 break
 
-    return cut_start, cut_end
+    return cut_start-1, cut_end+1
 
 
 def has_op(op, exp) -> bool:
@@ -256,7 +256,7 @@ def main() -> None:
             print(exp_ac, exp_ac[cut_start:cut_end])
 
             # Checa se o trecho atual da expressão já é uma operação e, se for, sai do laço. 
-            if is_col(table, exp_ac[cut_start:cut_end]):
+            if is_op(exp_ac[cut_start:cut_end]):
                 break
 
             # Limita a "Área de trabalho" da expressão para dentro dos parênteses, se houver"
@@ -269,10 +269,10 @@ def main() -> None:
             
             # Limita a "Área de trabalho" da expressão para dentro das negações, se houver. Cria a coluna negada se possível."
             elif has_op('{', exp_ac[cut_start:cut_end]):
-                
                 # Se a "Área de trabalho" for uma coluna já cadastrada na tabela, cria a versão negada da coluna e sai do laço.
-                if is_col(table, exp_ac[cut_start:cut_end]):
-                    table['{'+exp_ac[cut_start+1:cut_end-1]+'}'] = neg(exp_ac[cut_start:cut_end], table)
+                if is_col(table, exp_ac[cut_start+1:cut_end-1]):
+                    table['{'+exp_ac[cut_start+2:cut_end-2]+'}'] = neg(exp_ac[cut_start+1:cut_end-1], table)
+
                     is_neg = True
                     break
 
@@ -306,8 +306,6 @@ def main() -> None:
 
         # Atualização em caso de negação
         if is_neg:
-            cut_start -= 1
-            cut_end += 1
             temp = exp_ac[cut_start:cut_end]
             temp = temp.replace('{[', '[{', 1)
             temp = temp.replace(']}', '}]', 1)
